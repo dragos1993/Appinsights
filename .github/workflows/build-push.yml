@@ -1,9 +1,8 @@
 name: Build & Push to ACR
-
 on:
-  workflow_dispatch:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,7 +10,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,18 +19,14 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Docker login to ACR (hard-coded)
-        run: |
-          TOKEN=$(az acr login --name aksdemoacr4895 --expose-token --query accessToken -o tsv)
-          echo "$TOKEN" | docker login aksdemoacr4895.azurecr.io \
-            --username 00000000-0000-0000-0000-000000000000 \
-            --password-stdin
+      - name: Docker login to ACR
+        run: TOKEN=$(az acr login --name aksdemoacr4895 --expose-token --query accessToken -o tsv) && echo "$TOKEN" | docker login aksdemoacr4895.azurecr.io --username 00000000-0000-0000-0000-000000000000 --password-stdin
 
-      - name: Build image (hard-coded tag)
+      - name: Build image
         run: docker build -t aksdemoacr4895.azurecr.io/node-aks-app:1.0.0 .
 
       - name: Push image
         run: docker push aksdemoacr4895.azurecr.io/node-aks-app:1.0.0
 
       - name: Output image ref
-        run: echo "✅ Image pushed: aksdemoacr4895.azurecr.io/node-aks-app:1.0.0"
+        run: echo "Image pushed: aksdemoacr4895.azurecr.io/node-aks-app:1.0.0"
