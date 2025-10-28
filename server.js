@@ -11,27 +11,29 @@ if (conn) {
 
   appInsights.default
     .setup(conn)
-    .setAutoCollectRequests(true)         // capture incoming requests
-    .setAutoCollectDependencies(true)     // capture outbound HTTP calls
-    .setAutoCollectExceptions(true)       // capture unhandled exceptions
-    .setAutoCollectConsole(true)          // capture console.log/console.error
-    .setSendLiveMetrics(true)             // Live Metrics (already working for you)
-    .setUseDiskRetryCaching(true)         // persist telemetry if network fails
-    .setInternalLogging(true, true)       // verbose diagnostics to pod logs
-    .setSamplingPercentage(100);          // 🔥 send EVERYTHING (no sampling)
+    .setAutoCollectRequests(true)         // capture incoming HTTP requests
+    .setAutoCollectDependencies(true)     // outbound HTTP dependencies
+    .setAutoCollectExceptions(true)
+    .setAutoCollectConsole(true)
+    .setSendLiveMetrics(true)
+    .setUseDiskRetryCaching(true)
+    .setInternalLogging(true, true);      // verbose SDK logs to container logs
 
+  // ✅ Start sends telemetry automatically
   appInsights.default.start();
 
-  // Send a custom event immediately so we can see it in Logs -> customEvents table
-  const client = appInsights.default.defaultClient;
-  client.trackEvent({
+  // ✅ Disable sampling (send everything)
+  appInsights.default.defaultClient.config.samplingPercentage = 100;
+
+  // ✅ Emit custom event so we can check in Logs → customEvents table
+  appInsights.default.defaultClient.trackEvent({
     name: "boot_event",
-    properties: { source: "node-aks-app", message: "App started on AKS" }
+    properties: { message: "AKS Node app started" }
   });
-  client.flush();
-  console.log("✅ Application Insights enabled (sampling = 100%).");
+
+  console.log("✅ Application Insights enabled, sampling = 100%");
 } else {
-  console.warn("❌ No Application Insights connection string found.");
+  console.warn("❌ AI connection string missing — telemetry disabled.");
 }
 
 // -------------------------------------------
@@ -39,31 +41,29 @@ if (conn) {
 // -------------------------------------------
 const app = express();
 
-// readiness + liveness probes (needed by AKS)
-app.get("/healthz", (_, res) => res.status(200).send("ok"));
-app.get("/readyz", (_, res) => res.status(200).send("ready"));
+// Health probes required by AKS
+app.get("/healthz", (_, res) => res.send("ok"));
+app.get("/readyz", (_, res) => res.send("ready"));
 
-// default route
+// Root route
 app.get("/", (_, res) => {
-  console.log("Root route hit.");
+  console.log("Root endpoint hit.");
   res.send("Hello from Node on AKS (with App Insights ✅)");
 });
 
-// simulate slow endpoint (required for P75/P90/P95/P99 percentiles)
+// Slow endpoint (latency)
 app.get("/slow", async (_, res) => {
-  const ms = Math.floor(250 + Math.random() * 1500);
-  await new Promise(resolve => setTimeout(resolve, ms));
-  console.log(`Slow endpoint simulated ${ms}ms`);
-  res.send(`Slow response: ${ms}ms`);
+  const ms = Math.floor(Math.random() * 1500) + 250;
+  await new Promise(r => setTimeout(r, ms));
+  res.send(`Slow endpoint responded in ${ms} ms`);
 });
 
-// simulate external dependency (shows up in dependencies table)
+// External dependency (tracks in dependencies table)
 app.get("/external", async (_, res) => {
-  console.log("Calling external dependency...");
-  await fetch("https://example.com");   // App Insights automatically tracks this
-  res.send("External call completed.");
+  await fetch("https://example.com");
+  res.send("External call done.");
 });
 
-// start server
+// Start web server
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`🚀 Listening on port ${port}`));
+app.listen(port, () => console.log(`🚀 Listening on ${port}`));
