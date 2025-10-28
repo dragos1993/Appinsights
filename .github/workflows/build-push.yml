@@ -1,0 +1,46 @@
+name: Build & Push to ACR
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get ACR access token
+        id: acrtoken
+        run: |
+          TOKEN=$(az acr login --name ${{ secrets.ACR_NAME }} --expose-token --query accessToken -o tsv)
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+      - name: Docker login to ACR
+        run: |
+          echo "${{ steps.acrtoken.outputs.token }}" | \
+          docker login ${{ secrets.ACR_LOGIN_SERVER }} \
+            --username 00000000-0000-0000-0000-000000000000 \
+            --password-stdin
+
+      - name: Build image
+        run: |
+          IMAGE="${{ secrets.ACR_LOGIN_SERVER }}/node-aks-app:1.0.0"
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+          docker build -t "$IMAGE" .
+
+      - name: Push image
+        run: docker push "$IMAGE"
+
+      - name: Output image ref
+        run: echo "✅ Image pushed: $IMAGE"
