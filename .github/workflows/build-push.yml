@@ -21,29 +21,18 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Docker login to ACR
-        env:
-          ACR_NAME: ${{ secrets.ACR_NAME }}
-          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+      - name: Docker login to ACR (hard-coded)
         run: |
-          TOKEN=$(az acr login --name "$ACR_NAME" --expose-token --query accessToken -o tsv)
-          echo "$TOKEN" | docker login "$ACR_LOGIN_SERVER" \
+          TOKEN=$(az acr login --name aksdemoacr4895 --expose-token --query accessToken -o tsv)
+          echo "$TOKEN" | docker login aksdemoacr4895.azurecr.io \
             --username 00000000-0000-0000-0000-000000000000 \
             --password-stdin
 
-      - name: Build image
-        env:
-          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-        run: |
-          docker build -t "$ACR_LOGIN_SERVER/node-aks-app:1.0.0" .
+      - name: Build image (hard-coded tag)
+        run: docker build -t aksdemoacr4895.azurecr.io/node-aks-app:1.0.0 .
 
       - name: Push image
-        env:
-          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-        run: |
-          docker push "$ACR_LOGIN_SERVER/node-aks-app:1.0.0"
+        run: docker push aksdemoacr4895.azurecr.io/node-aks-app:1.0.0
 
       - name: Output image ref
-        env:
-          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-        run: echo "✅ Image pushed: $ACR_LOGIN_SERVER/node-aks-app:1.0.0"
+        run: echo "✅ Image pushed: aksdemoacr4895.azurecr.io/node-aks-app:1.0.0"
