@@ -23,10 +23,10 @@ jobs:
         run: TOKEN=$(az acr login --name aksdemoacr4895 --expose-token --query accessToken -o tsv) && echo "$TOKEN" | docker login aksdemoacr4895.azurecr.io --username 00000000-0000-0000-0000-000000000000 --password-stdin
 
       - name: Build image
-        run: docker build -t aksdemoacr4895.azurecr.io/node-aks-app:1.0.4 .
+        run: docker build -t aksdemoacr4895.azurecr.io/node-aks-app:1.0.5 .
 
       - name: Push image
-        run: docker push aksdemoacr4895.azurecr.io/node-aks-app:1.0.4
+        run: docker push aksdemoacr4895.azurecr.io/node-aks-app:1.0.5
 
       - name: Output image ref
-        run: echo "Image"
+        run: echo "Image1"
