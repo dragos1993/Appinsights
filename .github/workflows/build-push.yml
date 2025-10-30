@@ -1,4 +1,5 @@
 name: Build & Push to ACR
+
 on:
   push:
     branches: [ "main" ]
@@ -7,26 +8,40 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     permissions:
-      id-token: write
+      id-token: write   # required for OIDC login
       contents: read
+
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Azure login
+      # ✅ Login to Azure using OIDC + AZURE_CREDENTIALS JSON
+      - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Docker login to ACR
-        run: TOKEN=$(az acr login --name aksdemoacr4895 --expose-token --query accessToken -o tsv) && echo "$TOKEN" | docker login aksdemoacr4895.azurecr.io --username 00000000-0000-0000-0000-000000000000 --password-stdin
+      # ✅ Login to ACR using Azure CLI (no username/password required)
+      - name: ACR Login (AAD)
+        run: |
+          az acr login -n aksdemoacr4895
 
-      - name: Build image
-        run: docker build -t aksdemoacr4895.azurecr.io/node-aks-app:1.0.5 .
+      # ✅ Build Docker image
+      - name: Build Docker image
+        run: |
+          IMAGE="aksdemoacr4895.azurecr.io/node-aks-app:1.0.6"
+          echo "Building image: $IMAGE"
+          docker build -t $IMAGE .
 
-      - name: Push image
-        run: docker push aksdemoacr4895.azurecr.io/node-aks-app:1.0.5
+      # ✅ Push image
+      - name: Push Docker image
+        run: |
+          IMAGE="aksdemoacr4895.azurecr.io/node-aks-app:1.0.6"
+          echo "Pushing image: $IMAGE"
+          docker push $IMAGE
 
-      - name: Output image ref
-        run: echo "Image1"
+      # ✅ Output image tag
+      - name: Show pushed image
+        run: echo "✅ Image pushed: aksdemoacr4895.azurecr.io/node-aks-app:1.0.6"
