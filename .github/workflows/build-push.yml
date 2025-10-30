@@ -44,4 +44,4 @@ jobs:
 
       # ✅ Output image tag
       - name: Show pushed image
-        run: echo "✅ Image pushed: aksdemoacr4895.azurecr.io/node-aks-app:1.0.6"
+        run: echo "✅ Image pushed"
